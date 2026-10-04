@@ -6,6 +6,7 @@ import { draw } from "../renderer/draw";
 import { createBrowserIconLoader } from "../renderer/icon-loader-browser";
 import { createBrowserRenderTarget } from "../renderer/render-target-browser";
 import type { DiagramDocument } from "../renderer/types";
+import { loadPreamble, withPreamble } from "./preamble";
 
 const DB_URL = "https://syg5y0qnyf.execute-api.us-west-2.amazonaws.com/dev/";
 
@@ -26,12 +27,10 @@ if (docParam) {
   throw new Error("Missing required query parameter: doc or key");
 }
 
-fetch(url)
-  .then((response) => response.text())
-  .then((text) => {
-    const design = (load(text) || {}) as DiagramDocument;
-    draw(design, { target, iconLoader });
-    if (design.title?.text) {
-      document.title = `drawthe.net: ${design.title.text}`;
-    }
-  });
+Promise.all([fetch(url).then((response) => response.text()), loadPreamble()]).then(([text, preamble]) => {
+  const design = (load(withPreamble(preamble, text)) || {}) as DiagramDocument;
+  draw(design, { target, iconLoader });
+  if (design.title?.text) {
+    document.title = `drawthe.net: ${design.title.text}`;
+  }
+});
