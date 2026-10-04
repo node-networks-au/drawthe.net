@@ -11,6 +11,7 @@ import { createBrowserRenderTarget } from "../renderer/render-target-browser";
 import type { DiagramDocument } from "../renderer/types";
 import { installFileOpen } from "./file-open";
 import { installKeyboardShortcuts } from "./keyboard-shortcuts";
+import { editorLine, isPreambleAlias, loadPreamble, withPreamble, type Preamble } from "./preamble";
 import { buildShareUrl, decodeShareFragment, isShareFragment, LONG_LINK_WARNING_LENGTH } from "./share-link";
 import type { YamlDiagnostic } from "./yaml-editor";
 
@@ -30,11 +31,22 @@ let languageDiagnostics: YamlDiagnostic[] = [];
 let renderDiagnostics: YamlDiagnostic[] = [];
 
 async function initializeEditor(): Promise<void> {
+  let preamble: Preamble | undefined;
+  let preambleError: string | undefined;
+  try {
+    preamble = await loadPreamble();
+  } catch (error) {
+    preambleError = error instanceof Error ? error.message : String(error);
+  }
   const { createYamlEditor } = await import("./yaml-editor");
-  const editor = createYamlEditor(editorContainer, (diagnostics) => {
-    languageDiagnostics = diagnostics;
-    updateDiagnostics();
-  });
+  const editor = createYamlEditor(
+    editorContainer,
+    (diagnostics) => {
+      languageDiagnostics = diagnostics;
+      updateDiagnostics();
+    },
+    (message) => isPreambleAlias(preamble, message)
+  );
   editor.onDidChangeModelContent(() => {
     if (renderDiagnostics.length > 0) {
       renderDiagnostics = [];
@@ -49,7 +61,8 @@ async function initializeEditor(): Promise<void> {
 
 
   function updateDiagnostics(): void {
-    const diagnostics = [...languageDiagnostics, ...renderDiagnostics];
+    const preambleDiagnostics: YamlDiagnostic[] = preambleError ? [{ severity: "warning", message: preambleError }] : [];
+    const diagnostics = [...preambleDiagnostics, ...languageDiagnostics, ...renderDiagnostics];
     diagnosticsHeading.textContent = `Diagnostics (${diagnostics.length})`;
     const contents: HTMLElement[] = [];
     if (diagnostics.length === 0) {
@@ -86,12 +99,15 @@ async function initializeEditor(): Promise<void> {
 
   function reportRenderError(error: unknown): void {
     const mark = (error as { mark?: { line: number; column: number } } | null)?.mark;
+    const lineNumber = mark ? editorLine(preamble, mark.line + 1) : undefined;
+    const inPreamble = mark !== undefined && lineNumber === undefined;
+    const message = error instanceof Error ? error.message : String(error);
     renderDiagnostics = [
       {
         severity: "error",
-        message: error instanceof Error ? error.message : String(error),
-        lineNumber: mark ? mark.line + 1 : undefined,
-        column: mark ? mark.column + 1 : undefined
+        message: inPreamble ? `In preamble ${preamble?.url}: ${message}` : message,
+        lineNumber,
+        column: lineNumber !== undefined && mark ? mark.column + 1 : undefined
       }
     ];
     updateDiagnostics();
@@ -146,7 +162,7 @@ async function initializeEditor(): Promise<void> {
   async function redraw(renderTarget = target): Promise<void> {
     let design: DiagramDocument;
     try {
-      design = (load(editor.getValue()) || {}) as DiagramDocument;
+      design = (load(withPreamble(preamble, editor.getValue())) || {}) as DiagramDocument;
     } catch (error) {
       reportRenderError(error);
       return;
@@ -323,7 +339,7 @@ async function initializeEditor(): Promise<void> {
     const data = editor.getValue();
     let design: DiagramDocument;
     try {
-      design = (load(data) || {}) as DiagramDocument;
+      design = (load(withPreamble(preamble, data)) || {}) as DiagramDocument;
     } catch (error) {
       reportRenderError(error);
       return;

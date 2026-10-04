@@ -6,6 +6,7 @@ import { draw } from "../renderer/draw";
 import { createBrowserIconLoader } from "../renderer/icon-loader-browser";
 import { createBrowserRenderTarget } from "../renderer/render-target-browser";
 import type { DiagramDocument } from "../renderer/types";
+import { loadPreamble, withPreamble } from "./preamble";
 import { decodeShareFragment, isShareFragment } from "./share-link";
 
 const svgContainer = document.getElementById("svg") as HTMLElement;
@@ -24,8 +25,8 @@ if (docParam) {
   throw new Error("Missing diagram: pass ?doc=<example> or a #d= share fragment");
 }
 
-source.then((text) => {
-  const design = (load(text) || {}) as DiagramDocument;
+Promise.all([source, loadPreamble()]).then(([text, preamble]) => {
+  const design = (load(withPreamble(preamble, text)) || {}) as DiagramDocument;
   draw(design, { target, iconLoader });
   if (design.title?.text) {
     document.title = `drawthe.net: ${design.title.text}`;

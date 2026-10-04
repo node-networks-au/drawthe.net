@@ -37,6 +37,8 @@ For embedding diagrams in Hugo posts, see [the Hugo shortcode integration](integ
 
 The browser editor validates YAML syntax and documented diagram properties against a JSON Schema. Its diagnostics panel also reports renderer warnings, including unresolved icons and overlapping groups.
 
+**House style (preamble):** a deployment can provide a YAML file of shared anchors (icon, group, connection and note defaults) by adding `<meta name="drawthe-preamble" content="brand/house.yaml">` to `index.html` and `render.html`. The file is prepended to every diagram before rendering, so diagrams can use `<<: *houseRouter` without defining the anchor, and the editor does not flag those aliases as unresolved. Define anchors under their own top-level keys only; top-level `diagram:`, `title:`, `icons:` and so on would collide with each diagram's own. Downloads and share links contain only the diagram, not the preamble.
+
 Reusable icon defaults can opt into strict schema validation with `type: icon`. Unknown properties on the tagged anchor and on icon mappings that inherit it are reported as editor diagnostics; untagged custom anchors remain extensible. For example:
 
 ```yaml

@@ -27,7 +27,9 @@ export interface YamlDiagnostic {
 
 export function createYamlEditor(
   container: HTMLElement,
-  onDiagnosticsChanged: (diagnostics: YamlDiagnostic[]) => void
+  onDiagnosticsChanged: (diagnostics: YamlDiagnostic[]) => void,
+  /** Markers to drop (e.g. unresolved aliases that a preamble defines). */
+  isSuppressed: (message: string) => boolean = () => false
 ): monaco.editor.IStandaloneCodeEditor {
   const model = monaco.editor.createModel(
     "",
@@ -36,8 +38,22 @@ export function createYamlEditor(
   );
   monaco.editor.onDidChangeMarkers((resources) => {
     if (resources.some((resource) => resource.toString() === model.uri.toString())) {
+      const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+      const suppressed = markers.filter((marker) => isSuppressed(marker.message));
+      if (suppressed.length > 0) {
+        // Re-publish each owner's markers without the suppressed ones; that clears their
+        // squiggles and fires this listener again with the filtered set.
+        for (const owner of new Set(suppressed.map((marker) => marker.owner))) {
+          monaco.editor.setModelMarkers(
+            model,
+            owner,
+            markers.filter((marker) => marker.owner === owner && !isSuppressed(marker.message))
+          );
+        }
+        return;
+      }
       onDiagnosticsChanged(
-        monaco.editor.getModelMarkers({ resource: model.uri }).map((marker) => ({
+        markers.map((marker) => ({
           severity: marker.severity === monaco.MarkerSeverity.Error ? "error" :
             marker.severity === monaco.MarkerSeverity.Warning ? "warning" : "info",
           message: marker.message,
