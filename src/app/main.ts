@@ -9,6 +9,7 @@ import { draw } from "../renderer/draw";
 import { createBrowserIconLoader } from "../renderer/icon-loader-browser";
 import { createBrowserRenderTarget } from "../renderer/render-target-browser";
 import type { DiagramDocument } from "../renderer/types";
+import { installFileOpen } from "./file-open";
 import { installKeyboardShortcuts } from "./keyboard-shortcuts";
 import type { YamlDiagnostic } from "./yaml-editor";
 
@@ -102,6 +103,20 @@ async function initializeEditor(): Promise<void> {
     editor.setPosition({ lineNumber: editor.getModel()?.getLineCount() || 1, column: 1 });
   }
 
+  /** Replaces the editor contents as a single undoable edit, so ctrl-z restores the previous diagram. */
+  function replaceYamlText(text: string): void {
+    const model = editor.getModel();
+    if (!model) {
+      setYamlText(text);
+      return;
+    }
+    editor.pushUndoStop();
+    editor.executeEdits("open-file", [{ range: model.getFullModelRange(), text }]);
+    editor.pushUndoStop();
+    editor.setPosition({ lineNumber: 1, column: 1 });
+    editor.revealLine(1);
+  }
+
   updateDiagnostics();
 
   let docId = window.location.hash.substring(2);
@@ -158,6 +173,20 @@ async function initializeEditor(): Promise<void> {
   } else {
     void loadYaml("examples/NTP.yaml");
   }
+
+  // --- open a local YAML file (Open button or drag and drop) ---
+  installFileOpen({
+    openButton: document.getElementById("open"),
+    highlightTarget: document.body,
+    onOpen: ({ text }) => {
+      replaceYamlText(text);
+      void redraw();
+    },
+    onError: (message) => {
+      renderDiagnostics = [{ severity: "error", message }];
+      updateDiagnostics();
+    }
+  });
 
   // --- draw / keyboard shortcuts ---
   document.getElementById("draw")?.addEventListener("click", () => void redraw());

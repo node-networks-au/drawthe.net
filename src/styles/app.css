@@ -47,6 +47,10 @@ body {
 .monaco-editor-host {
   min-width: 0;
 }
+.is-file-dragover .monaco-editor-host {
+  outline: 3px dashed #0d6efd;
+  outline-offset: -3px;
+}
 .monaco-editor .decorationsOverviewRuler {
   display: none !important;
 }
