@@ -10,9 +10,8 @@ import { createBrowserIconLoader } from "../renderer/icon-loader-browser";
 import { createBrowserRenderTarget } from "../renderer/render-target-browser";
 import type { DiagramDocument } from "../renderer/types";
 import { installKeyboardShortcuts } from "./keyboard-shortcuts";
+import { buildShareUrl, decodeShareFragment, isShareFragment, LONG_LINK_WARNING_LENGTH } from "./share-link";
 import type { YamlDiagnostic } from "./yaml-editor";
-
-const DB_URL = "https://syg5y0qnyf.execute-api.us-west-2.amazonaws.com/prod/";
 
 const svgContainer = document.getElementById("svg") as HTMLElement;
 const editorContainer = document.getElementById("editor") as HTMLElement;
@@ -104,8 +103,30 @@ async function initializeEditor(): Promise<void> {
 
   updateDiagnostics();
 
-  let docId = window.location.hash.substring(2);
   let shown = true;
+  // True once the editor holds a diagram from a share link (opened or just created);
+  // the first edit after that drops the now-stale #d= fragment from the address bar.
+  let showingSharedLink = false;
+  editor.onDidChangeModelContent(() => {
+    if (showingSharedLink) {
+      showingSharedLink = false;
+      clearShareFragment();
+    }
+  });
+
+  function clearShareFragment(): void {
+    if (window.location.hash) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }
+
+  function setEditorShown(show: boolean): void {
+    shown = show;
+    document.getElementById("fullScreenMode")!.textContent = show ? " Hide editor" : " Show editor";
+    leftSide.classList.toggle("d-none", !show);
+    rightSide.classList.toggle("col-sm-12", !show);
+    rightSide.classList.toggle("col-sm-6", show);
+  }
 
   async function redraw(renderTarget = target): Promise<void> {
     let design: DiagramDocument;
@@ -138,26 +159,67 @@ async function initializeEditor(): Promise<void> {
       .then((response) => response.text())
       .then((text) => {
         setYamlText(text);
-        redraw();
+        return redraw();
       });
   }
 
-  // --- initial load: existing saved doc (via hash), or the default example ---
-  if (docId) {
-    shown = false;
-    leftSide.classList.add("hidden");
-    rightSide.classList.add("col-sm-12");
-    rightSide.classList.remove("col-sm-6");
-    document.getElementById("fullScreenMode")!.textContent = " Show editor";
-    fetch(DB_URL + docId)
-      .then((response) => response.text())
+  // --- initial load: a shared diagram (#d=...) in view mode, or the default example ---
+  if (isShareFragment(window.location.hash)) {
+    setEditorShown(false);
+    decodeShareFragment(window.location.hash)
       .then((text) => {
         setYamlText(text);
-        redraw();
+        showingSharedLink = true;
+        void redraw();
+      })
+      .catch((error: unknown) => {
+        setEditorShown(true);
+        clearShareFragment();
+        void loadYaml("examples/NTP.yaml").then(() => {
+          renderDiagnostics = [{ severity: "error", message: error instanceof Error ? error.message : String(error) }];
+          updateDiagnostics();
+        });
       });
+  } else if (window.location.hash.startsWith("#/")) {
+    // Links to the retired hosted storage service (#/<id>) can no longer be resolved.
+    clearShareFragment();
+    void loadYaml("examples/NTP.yaml").then(() => {
+      renderDiagnostics = [
+        { severity: "info", message: "This saved-diagram link points to a storage service that has been retired." }
+      ];
+      updateDiagnostics();
+    });
   } else {
     void loadYaml("examples/NTP.yaml");
   }
+
+  // --- share: copy a self-contained link to the current diagram ---
+  const shareLabel = document.getElementById("shareLabel");
+  document.getElementById("share")?.addEventListener("click", () => {
+    void buildShareUrl(editor.getValue(), window.location).then(async (url) => {
+      history.replaceState(null, "", url);
+      showingSharedLink = true;
+      let label = "Link copied";
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        label = "Copy from address bar";
+      }
+      if (url.length > LONG_LINK_WARNING_LENGTH) {
+        renderDiagnostics = [
+          {
+            severity: "warning",
+            message: `Share link is ${Math.round(url.length / 1024)} KB; some chat and mail clients truncate links this long.`
+          }
+        ];
+        updateDiagnostics();
+      }
+      if (shareLabel) {
+        shareLabel.textContent = ` ${label}`;
+        setTimeout(() => (shareLabel.textContent = " Share"), 2000);
+      }
+    });
+  });
 
   // --- draw / keyboard shortcuts ---
   document.getElementById("draw")?.addEventListener("click", () => void redraw());
@@ -168,8 +230,7 @@ async function initializeEditor(): Promise<void> {
   document.querySelectorAll<HTMLElement>("[data-example]").forEach((item) => {
     item.addEventListener("click", () => {
       const file = item.dataset.example!;
-      window.location.hash = "";
-      docId = "";
+      clearShareFragment();
       void loadYaml(`examples/${file}`);
       closeDropdown(item);
     });
@@ -224,11 +285,7 @@ async function initializeEditor(): Promise<void> {
 
   // --- fullscreen toggle ---
   document.getElementById("fullScreen")?.addEventListener("click", () => {
-    shown = !shown;
-    document.getElementById("fullScreenMode")!.textContent = shown ? " Hide editor" : " Show editor";
-    leftSide.classList.toggle("d-none", !shown);
-    rightSide.classList.toggle("col-sm-12", !shown);
-    rightSide.classList.toggle("col-sm-6", shown);
+    setEditorShown(!shown);
     redraw();
   });
 
