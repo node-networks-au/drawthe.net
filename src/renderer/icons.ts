@@ -2,6 +2,7 @@ import type { AnySelection } from "./d3-types";
 import { toEntries } from "./d3-types";
 import type { IconLoader } from "./icon-loader";
 import { textPositions } from "./process";
+import { escapeHtml, safeUrl } from "./sanitize";
 import type { DiagramConfig, IconMap, IconMetadata } from "./types";
 
 export async function drawIcons(
@@ -52,9 +53,9 @@ export async function drawIcons(
       d.value.textPosition = textPositions(0, 0, d.value.width, d.value.height, d.value.fontSize + 2)[
         d.value.textLocation
       ];
-      if (d.value.url) {
-        const url = d.value.url;
-        this.addEventListener("click", () => window.open(url));
+      const url = safeUrl(d.value.url, window.location.href);
+      if (url) {
+        this.addEventListener("click", () => window.open(url, "_blank", "noopener"));
         this.style.cursor = "pointer";
         this.style.textDecoration = "underline";
       }
@@ -130,8 +131,9 @@ export async function drawIcons(
 
   function handleMouseOver(this: SVGGElement, _event: MouseEvent, d: any): void {
     if (d.value.metadata && d.value.metadata.url) {
-      const url = resolveMetadataUrl(d.value.metadata.url, d.key, d.value);
-      fetch(url)
+      const url = safeUrl(resolveMetadataUrl(d.value.metadata.url, d.key, d.value), window.location.href);
+      const request = url ? fetch(url) : Promise.reject(new Error("unsupported metadata URL"));
+      request
         .then((response) => {
           if (!response.ok) {
             throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status, statusText: response.statusText });
@@ -206,7 +208,7 @@ export async function drawIcons(
       .html(() => {
         let text = "<table>";
         for (const key of Object.keys(metadata)) {
-          text += `<tr><td>${key}:&nbsp</td><td>${metadata[key]}</td></tr>`;
+          text += `<tr><td>${escapeHtml(key)}:&nbsp</td><td>${escapeHtml(metadata[key])}</td></tr>`;
         }
         text += "</table>";
         return text;
