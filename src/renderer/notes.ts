@@ -2,6 +2,7 @@ import showdown from "showdown";
 import { select } from "d3";
 import type { AnySelection } from "./d3-types";
 import { toEntries } from "./d3-types";
+import { sanitizeHtml } from "./sanitize";
 import type { DiagramConfig, NoteMap } from "./types";
 
 // Inlined from showdown-prettify (BSD-2-Clause, https://github.com/showdownjs/prettify-extension)
@@ -92,5 +93,5 @@ export function drawNotes(svg: AnySelection, diagram: DiagramConfig, notes: Note
     .style("align-items", (d: any) => d.value.alignItems || xAlignStyles[d.value.xAlign].alignItems)
     .style("justify-content", (d: any) => d.value.justifyContent || yAlignStyles[d.value.yAlign].justifyContent)
     .style("text-align", (d: any) => d.value.textAlign || xAlignStyles[d.value.xAlign].textAlign)
-    .html((d: any) => converter.makeHtml(d.value.text || "Missing text in note"));
+    .html((d: any) => sanitizeHtml(converter.makeHtml(d.value.text || "Missing text in note")));
 }
