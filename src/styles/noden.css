@@ -1,0 +1,103 @@
+/*
+ * NodeN theme for draw.noden.com.au. Fork-only; keep upstream files untouched so
+ * syncing with cidrblock/drawthe.net stays conflict-free. Palette matches
+ * diff.noden.com.au (portal-ui): navy brand, blue accents, system fonts.
+ */
+:root {
+  --noden-brand: #133353;
+  --noden-brand-hover: #1e3a5f;
+  --noden-accent: #4a9eff;
+  --noden-bg: #faf8fa;
+  --noden-surface: #ffffff;
+  --noden-text-body: #2d2a2e;
+  --noden-text-secondary: #64748b;
+  --noden-border: #e5e7eb;
+}
+
+body {
+  background: var(--noden-bg);
+  color: var(--noden-text-body);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#leftSide {
+  background-color: var(--noden-surface);
+}
+
+.editor-toolbar,
+.diagram-toolbar {
+  align-items: center;
+}
+
+.noden-logo {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.noden-logo img {
+  height: 26px;
+  width: auto;
+}
+
+/* Toolbar buttons: navy pills instead of upstream's black squares. */
+.btn-black,
+.btn-black:visited {
+  background-color: var(--noden-brand);
+  border-color: var(--noden-brand);
+  border-radius: 6px;
+  color: #fff;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn-black:hover,
+.btn-black:focus,
+.btn-black:active,
+.btn-black.active,
+.show > .dropdown-toggle.btn-black {
+  background-color: var(--noden-brand-hover);
+  border-color: var(--noden-brand-hover);
+  color: #fff;
+}
+
+.btn-black:focus-visible {
+  outline: 2px solid var(--noden-accent);
+  outline-offset: 2px;
+}
+
+.btn-link-credit {
+  color: var(--noden-text-secondary);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.btn-link-credit:hover {
+  color: var(--noden-brand);
+  text-decoration: underline;
+}
+
+.dropdown-menu {
+  border-color: var(--noden-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(45, 42, 46, 0.08);
+}
+
+.editor-diagnostics {
+  border-color: var(--noden-border);
+}
+
+.is-file-dragover .monaco-editor-host {
+  outline-color: var(--noden-accent);
+}
+
+.monaco-editor,
+kbd,
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}

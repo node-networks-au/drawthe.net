@@ -3,16 +3,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
-    <meta name="robots" content="index,follow">
-    <meta name="description" content="decent looking diagrams for engineers">
-    <link rel="icon" type="image/png" href="/images/radial.png">
-    <title>Decent looking diagrams for engineers</title>
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="description" content="NodeN network diagrams, defined as YAML">
+    <link rel="icon" href="/noden/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/noden/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/noden/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/noden/apple-touch-icon.png">
+    <meta name="theme-color" content="#133353">
+    <!-- NodeN house-style anchors; mounted from the containers repo (docs/diagrams/_brand). -->
+    <meta name="drawthe-preamble" content="brand/noden.yaml">
+    <title>NodeN Diagrams</title>
 </head>
 <body>
     <div class="row">
         <div class="col-sm-6" id="leftSide">
             <div class="editor-toolbar d-flex justify-content-between align-items-center gap-1">
-                <div class="d-flex gap-1">
+                <div class="d-flex gap-1 align-items-center">
+                    <a class="noden-logo" href="https://www.noden.com.au" target="_blank" rel="noopener" title="Node Networks">
+                        <img src="/noden/node-networks-logo.svg" alt="Node Networks">
+                    </a>
                     <button id="open" class="btn btn-black btn-sm" type="button"
                         title="Open a YAML file (or drop one onto the page)">
                         <span class="fa fa-folder-open-o" aria-hidden="true"></span> Open
@@ -103,8 +112,9 @@
                         <li role="menuitem" data-icon-family="cisco2026-filled"><a class="dropdown-item" href="javascript:void(0);">cisco2026 (iconFill)</a></li>
                     </ul>
                 </div>
-                <a href="https://github.com/cidrblock/drawthe.net" target="_blank" rel="noopener" class="btn btn-black btn-sm">
-                    <span class="fa fa-github"></span> Github
+                <a href="https://github.com/cidrblock/drawthe.net" target="_blank" rel="noopener" class="btn btn-sm btn-link-credit"
+                    title="Built on drawthe.net by Bradley Thornton (MIT)">
+                    <span class="fa fa-github"></span> drawthe.net
                 </a>
                 <button id="fullScreen" class="btn btn-black btn-sm" type="button">
                     <span class="fa fa-pencil-square-o" aria-hidden="true"></span><span id="fullScreenMode"> Hide editor</span>

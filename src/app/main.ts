@@ -3,6 +3,7 @@ import "font-awesome/css/font-awesome.min.css";
 import "../styles/app.css";
 import "../styles/print.css";
 import "../styles/notes.css";
+import "../styles/noden.css";
 import { load } from "js-yaml";
 import { saveSvgAsPng } from "save-svg-as-png";
 import { draw } from "../renderer/draw";
