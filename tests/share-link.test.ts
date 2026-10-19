@@ -6,7 +6,8 @@ import {
   decodeShareFragment,
   encodeShareFragment,
   isShareFragment,
-  MAX_SHARED_YAML_BYTES
+  MAX_SHARED_YAML_BYTES,
+  resolveSharePage
 } from "../src/app/share-link";
 
 const example = readFileSync("examples/NTP.yaml", "utf8");
@@ -28,6 +29,28 @@ test("buildShareUrl keeps the page path and query and replaces any existing frag
   const url = await buildShareUrl("a: 1\n", { origin: "https://draw.example", pathname: "/", search: "?x=1" });
   assert.match(url, /^https:\/\/draw\.example\/\?x=1#d=/);
   assert.equal(await decodeShareFragment(new URL(url).hash), "a: 1\n");
+});
+
+test("share links open the configured share page, resolved against the editor's location", async () => {
+  const editor = { href: "https://draw.example/?x=1#d=old" };
+  assert.deepEqual(resolveSharePage(editor, "render.html"), {
+    origin: "https://draw.example",
+    pathname: "/render.html",
+    search: ""
+  });
+  const url = await buildShareUrl("a: 1\n", resolveSharePage(editor, " render.html "));
+  assert.match(url, /^https:\/\/draw\.example\/render\.html#d=/);
+});
+
+test("without a share page, share links open the current page", () => {
+  const editor = { href: "https://draw.example/?x=1#d=old" };
+  for (const sharePage of [undefined, "", "  "]) {
+    assert.deepEqual(resolveSharePage(editor, sharePage), {
+      origin: "https://draw.example",
+      pathname: "/",
+      search: "?x=1"
+    });
+  }
 });
 
 test("non-share fragments are not treated as shared diagrams", () => {

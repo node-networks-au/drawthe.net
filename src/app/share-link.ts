@@ -89,10 +89,26 @@ export async function decodeShareFragment(hash: string): Promise<string> {
   }
 }
 
+type SharePage = Pick<Location, "origin" | "pathname" | "search">;
+
 /** Builds a full share URL for the given page, replacing any existing fragment. */
-export async function buildShareUrl(
-  yaml: string,
-  page: Pick<Location, "origin" | "pathname" | "search">
-): Promise<string> {
+export async function buildShareUrl(yaml: string, page: SharePage): Promise<string> {
   return `${page.origin}${page.pathname}${page.search}${await encodeShareFragment(yaml)}`;
+}
+
+/** Meta tag naming the page share links open, e.g. a read-only viewer: `<meta name="drawthe-share-page" content="render.html">`. */
+export const SHARE_PAGE_META_NAME = "drawthe-share-page";
+
+/**
+ * The page share links open: `sharePage` resolved against the current location, or the
+ * current page itself when no share page is configured.
+ */
+export function resolveSharePage(current: Pick<Location, "href">, sharePage: string | undefined): SharePage {
+  const url = new URL(sharePage?.trim() || current.href, current.href);
+  return { origin: url.origin, pathname: url.pathname, search: url.search };
+}
+
+/** The share page named by the document's `drawthe-share-page` meta tag, if there is one. */
+export function sharePageFromDocument(doc: Document = document): string | undefined {
+  return doc.querySelector<HTMLMetaElement>(`meta[name="${SHARE_PAGE_META_NAME}"]`)?.content.trim() || undefined;
 }
