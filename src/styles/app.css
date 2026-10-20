@@ -229,3 +229,15 @@ fieldset[disabled] .btn-black.active {
   white-space: nowrap;
   text-align:right;
 }
+
+.open-in-editor {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+@media print {
+  .open-in-editor {
+    display: none;
+  }
+}

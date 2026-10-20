@@ -13,7 +13,14 @@ import type { DiagramDocument } from "../renderer/types";
 import { installFileOpen } from "./file-open";
 import { installKeyboardShortcuts } from "./keyboard-shortcuts";
 import { editorLine, isPreambleAlias, loadPreamble, withPreamble, type Preamble } from "./preamble";
-import { buildShareUrl, decodeShareFragment, isShareFragment, LONG_LINK_WARNING_LENGTH } from "./share-link";
+import {
+  buildShareUrl,
+  decodeShareFragment,
+  isShareFragment,
+  LONG_LINK_WARNING_LENGTH,
+  resolveSharePage,
+  sharePageFromDocument
+} from "./share-link";
 import type { YamlDiagnostic } from "./yaml-editor";
 
 const svgContainer = document.getElementById("svg") as HTMLElement;
@@ -242,9 +249,14 @@ async function initializeEditor(): Promise<void> {
   // --- share: copy a self-contained link to the current diagram ---
   const shareLabel = document.getElementById("shareLabel");
   document.getElementById("share")?.addEventListener("click", () => {
-    void buildShareUrl(editor.getValue(), window.location).then(async (url) => {
-      history.replaceState(null, "", url);
-      showingSharedLink = true;
+    const sharePage = resolveSharePage(window.location, sharePageFromDocument());
+    void buildShareUrl(editor.getValue(), sharePage).then(async (url) => {
+      // Only mirror the link into the address bar when it opens this page; a link to a
+      // separate share page (drawthe-share-page) would otherwise move the editor there.
+      if (sharePage.pathname === window.location.pathname) {
+        history.replaceState(null, "", url);
+        showingSharedLink = true;
+      }
       let label = "Link copied";
       try {
         await navigator.clipboard.writeText(url);

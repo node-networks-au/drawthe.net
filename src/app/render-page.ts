@@ -21,6 +21,7 @@ if (docParam) {
   source = fetch(`./examples/${docParam}.yaml`).then((response) => response.text());
 } else if (isShareFragment(window.location.hash)) {
   source = decodeShareFragment(window.location.hash);
+  addOpenInEditorLink(window.location.hash);
 } else {
   throw new Error("Missing diagram: pass ?doc=<example> or a #d= share fragment");
 }
@@ -32,3 +33,12 @@ Promise.all([source, loadPreamble()]).then(([text, preamble]) => {
     document.title = `drawthe.net: ${design.title.text}`;
   }
 });
+
+/** A shared diagram can be reopened in the editor, which also accepts `#d=` links. */
+function addOpenInEditorLink(fragment: string): void {
+  const link = document.createElement("a");
+  link.href = `./${fragment}`;
+  link.className = "btn btn-light btn-sm open-in-editor";
+  link.textContent = "Open in editor";
+  document.body.append(link);
+}
