@@ -53,7 +53,7 @@ export async function drawIcons(
       d.value.textPosition = textPositions(0, 0, d.value.width, d.value.height, d.value.fontSize + 2)[
         d.value.textLocation
       ];
-      const url = safeUrl(d.value.url, window.location.href);
+      const url = safeUrl(d.value.url, globalThis.location?.href);
       if (url) {
         this.addEventListener("click", () => window.open(url, "_blank", "noopener"));
         this.style.cursor = "pointer";
@@ -131,7 +131,7 @@ export async function drawIcons(
 
   function handleMouseOver(this: SVGGElement, _event: MouseEvent, d: any): void {
     if (d.value.metadata && d.value.metadata.url) {
-      const url = safeUrl(resolveMetadataUrl(d.value.metadata.url, d.key, d.value), window.location.href);
+      const url = safeUrl(resolveMetadataUrl(d.value.metadata.url, d.key, d.value), globalThis.location?.href);
       const request = url ? fetch(url) : Promise.reject(new Error("unsupported metadata URL"));
       request
         .then((response) => {
